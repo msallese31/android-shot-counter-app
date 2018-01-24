@@ -15,11 +15,14 @@
         android:padding="@dimen/inner_frame_layout_padding"
         app:layout_box="all">
 
-        <TextView
-            android:id="@+id/text"
+        <Button
+            android:id="@+id/startService"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/hello_world" />
+            android:text="Start Service"
+            android:onClick="recordData"
+            android:layout_gravity="center|center_horizontal"
+            />
 
     </FrameLayout>
 </android.support.wearable.view.BoxInsetLayout>

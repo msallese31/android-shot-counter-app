@@ -28,12 +28,12 @@ public class HomeActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
-//        Intent intent = new Intent(this, ListenerService.class);
-//        startService(intent);
+        Intent intent = new Intent(this, ListenerService.class);
+        startService(intent);
 
         try {
             logSensorLevel("about to make request");
-            new PostRequest().execute();
+//            new PostRequest().execute();
 // handle response here...
         } catch (Exception ex) {
             // handle exception here
@@ -41,47 +41,7 @@ public class HomeActivity extends AppCompatActivity {
         }
     }
 
-    private class PostRequest extends AsyncTask<Void, Void, String> {
 
-        private Exception exception;
-
-        protected void onPostExecute() {
-            // TODO: check this.exception
-            // TODO: do something with the feed
-        }
-
-        @Override
-        protected String doInBackground(Void... voids) {
-            try {
-                logSensorLevel("1");
-                CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-                HttpGet request = new HttpGet(url);
-                CloseableHttpResponse resp = httpClient.execute(request);
-                HttpEntity entity = resp.getEntity();
-                StringBuilder sb = new StringBuilder();
-                try {
-                    BufferedReader reader =
-                            new BufferedReader(new InputStreamReader(entity.getContent()), 65728);
-                    String line = null;
-
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line);
-                    }
-                    logSensorLevel(sb.toString());
-                }
-                catch (IOException e) { logSensorLevel(e.toString()); }
-                catch (Exception e) { logSensorLevel(e.toString()); }
-
-
-                System.out.println("finalResult " + sb.toString());
-            } catch (Exception e) {
-                this.exception = e;
-                logSensorLevel("exception in postrequest: " + e);
-                return null;
-            }
-            return null;
-        }
-    }
 
 }
 
