@@ -31,7 +31,7 @@ public class ListenerService extends WearableListenerService implements MessageA
 
     private static final String DATA_INTERVAL_PATH = "/shot-session";
     JSONArray sessionList = new JSONArray();
-    String url ="http://192.168.0.179:12345/health";
+    String url ="http://192.168.0.179:12345/count";
 
 
     @Override
