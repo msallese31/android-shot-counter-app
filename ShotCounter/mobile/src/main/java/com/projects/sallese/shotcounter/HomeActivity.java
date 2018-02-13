@@ -159,7 +159,7 @@ public class HomeActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
         signOut();
-//        mGoogleSignInClient.signOut();
+        mGoogleSignInClient.signOut();
     }
 
     private void updateUI() {
@@ -199,9 +199,9 @@ public class HomeActivity extends AppCompatActivity {
                 request.setEntity(params);
                 HttpResponse response = httpClient.execute(request);
                 logSensorLevel(response.toString());
-                ResponseHandler<String> handler = new BasicResponseHandler();
-                String body = handler.handleResponse(response);
-                logSensorLevel(body);
+//                ResponseHandler<String> handler = new BasicResponseHandler();
+//                String body = handler.handleResponse(response).getBytes().toString();
+                logSensorLevel(response.getStatusLine().toString());
 
             } catch (Exception e) {
                 this.exception = e;
