@@ -2,7 +2,7 @@ apply plugin: 'com.android.application'
 
 android {
     compileSdkVersion 26
-    buildToolsVersion "26.0.1"
+    buildToolsVersion '26.0.2'
     defaultConfig {
         applicationId "com.projects.sallese.shotcounter"
         minSdkVersion 15
@@ -10,17 +10,43 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+        lintOptions {
+
+            checkReleaseBuilds false
+
+        }
     }
+//    signingConfigs {
+//
+//        debug {
+//            storeFile file("/home/sallese/shot-counter-work/keystore/mvp-key.jks")
+//            storePassword "Ginamike1"
+//            keyAlias "mvp-key"
+//            keyPassword "Ginamike1"
+//        }
+//
+//        release {
+//            storeFile file("/home/sallese/shot-counter-work/keystore/mvp-key.jks")
+//            storePassword "Ginamike1"
+//            keyAlias "mvp-key"
+//            keyPassword "Ginamike1"
+//        }
+//    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            signingConfig signingConfigs.release
         }
+//        debug {
+//            signingConfig signingConfigs.debug
+//        }
     }
     useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {
+    compile 'com.google.android.gms:play-services-auth:11.8.0'
     compile 'org.apache.httpcomponents:httpclient-android:4.3.5.1'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:26.1.0'

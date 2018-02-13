@@ -30,6 +30,10 @@ public class DataCollectionService extends Service implements SensorEventListene
     public ArrayList<Float> YGyro;
     public ArrayList<Float> ZGyro;
 
+    float[] accData = new float[3];
+    float[] gravity = new float[3];
+
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -65,6 +69,21 @@ public class DataCollectionService extends Service implements SensorEventListene
         float x = event.values[0];
         float y = event.values[1];
         float z = event.values[2];
+
+        accData[0] = x;
+        accData[1] = y;
+        accData[2] = z;
+
+        final float alpha = 0.8f;
+        gravity[0] = alpha * gravity[0] + (1 - alpha) * accData[0];
+        gravity[1] = alpha * gravity[1] + (1 - alpha) * accData[1];
+        gravity[2] = alpha * gravity[2] + (1 - alpha) * accData[2];
+
+
+        x = accData[0] - gravity[0];
+        y = accData[1] - gravity[1];
+        z = accData[2] - gravity[2];
+
         logSensorLevel("X: " + x + "\nY: " + y + "\nZ:" + z + "\n");
         XAcc.add(x);
         YAcc.add(y);

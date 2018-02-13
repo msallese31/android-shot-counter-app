@@ -128,6 +128,7 @@ public class WearHomeActivity extends WearableActivity {
 //                    }catch (JSONException je){
 //                        logSensorLevel("json exception: " + je);
 //                    }
+                    logSensorLevel("About to send shot session message!");
                     Wearable.MessageApi.sendMessage(googleApiClient, nodeId, "/shot-session", setJson.toString().getBytes());
                     googleApiClient.disconnect();
                 }
