@@ -11,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -52,48 +53,56 @@ import java.util.List;
 
 import static com.projects.sallese.shotcounter.LogHelper.logSensorLevel;
 import com.projects.sallese.shotcounter.UserSession;
+import com.projects.sallese.shotcounter.util.IabHelper;
+import com.projects.sallese.shotcounter.util.IabResult;
 
 
-public class HomeActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity implements View.OnClickListener{
     // TODO: 2/11/18 Refactor into global config
-    String url ="http://192.168.0.179:8080/sign-in";
+    // Discover service somehow
+    String url ="http://35.227.124.115:8080/sign-in";
     private TextView tvShotCount;
     private GoogleSignInClient mGoogleSignInClient;
     int RC_SIGN_IN = 5;
+    IabHelper mHelper;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
         // Set the dimensions of the sign-in button.
+
         SignInButton signInButton = findViewById(R.id.sign_in_button);
-        signInButton.setSize(SignInButton.SIZE_STANDARD);
-        findViewById(R.id.sign_in_button).setOnClickListener(signInButton);
+        signInButton.setSize(SignInButton.SIZE_WIDE);
+
+        findViewById(R.id.sign_in_button).setOnClickListener(this);
 
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
                 .requestIdToken("547984691715-q1tkn5gd9hrn3idq6297j7gltlkj336p.apps.googleusercontent.com")
+                .requestProfile()
                 .build();
         mGoogleSignInClient = GoogleSignIn.getClient(this, gso);
+
+        // TODO: 3/24/18 DONT HARDCODE THIS
+        // See here: https://developer.android.com/training/in-app-billing/preparing-iab-app.html#Connect
+        String base64EncodedPublicKey = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAhrzspnsswGL5spEVMlHs1DgkQViPOUeXaE+4vYFzorPhdQBagHnOLnaQkY0DVr4YYFzgP8JUwDzaRobj8UAqRUlkRyh4PxR2AmwnJpCa6VFvGvg79OHNA2xfPdy9puvLWkwW2/I3ML50np9FsAhWjRFNs88sg1if88P3xAA3Wyo9QVRt4wkbOyIwf5t3yxhWnjLgBb7EcRLTOvsUcDlXkYmR6+SG98yj97IL/fKAtj4jxI4YTI2Sp6yWoyQZpzdsZAKNOh6uNFlQErtHgybCs7hTC3pWS7X/4HTyK61XvddeC0xh/SDSg25+iqtO/YqTYqrKck4ChiQpQka++XJwKQIDAQAB";
+
+        // compute your public key and store it in base64EncodedPublicKey
+        mHelper = new IabHelper(this, base64EncodedPublicKey);
+
+        mHelper.startSetup(new IabHelper.OnIabSetupFinishedListener() {
+            public void onIabSetupFinished(IabResult result) {
+                if (!result.isSuccess()) {
+                    // Oh no, there was a problem.
+                    logSensorLevel("Problem setting up In-app Billing: " + result);
+                }
+                // Hooray, IAB is fully set up!
+            }
+        });
+
         signIn();
-
-//        try {
-//            logSensorLevel("about to make request");
-////            new PostRequest().execute();
-//// handle response here...
-//        } catch (Exception ex) {
-//            // handle exception here
-//            logSensorLevel("Exception!!! " + ex);
-//        }
-
-        LocalBroadcastManager.getInstance(this).registerReceiver(
-                new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        int shot_count = intent.getIntExtra(ListenerService.INCREMENT_SHOTS, 0);
-                    }
-                }, new IntentFilter(ListenerService.LISTENER_SERVICE_BROADCAST)
-        );
     }
 
     @Override
@@ -109,11 +118,29 @@ public class HomeActivity extends AppCompatActivity {
             startActivityForResult(signInIntent, RC_SIGN_IN);
         } else {
             logSensorLevel("already signed in: " + account.getEmail());
-            logSensorLevel("token:" +account.getIdToken());
-            logSensorLevel("id token: " + account.getIdToken());
-            logSensorLevel("oldtoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImUyNzY3MWQ3M2EyNjA1Y2NkNDU0NDEzYzRjOTRlMjViM2Y2NmNkZWEifQ.eyJhenAiOiI1NDc5ODQ2OTE3MTUtYjVpZnYzOWV2OGEyMHQ1OThsNjVlbmV1ZDN0NG83OWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1NDc5ODQ2OTE3MTUtcTF0a241Z2Q5aHJuM2lkcTYyOTdqN2dsdGxrajMzNnAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTM1OTA2NjY5MzI2NTI5MzUyNTIiLCJlbWFpbCI6Im1zYWxsZXNlMzFAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV4cCI6MTUxODQwMTU0MywiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tIiwiaWF0IjoxNTE4Mzk3OTQzLCJuYW1lIjoiTWlrZSBTYWxsZXNlIiwicGljdHVyZSI6Imh0dHBzOi8vbGg0Lmdvb2dsZXVzZXJjb250ZW50LmNvbS8tU1ptR09mNnNfZncvQUFBQUFBQUFBQUkvQUFBQUFBQUFBQUEvQUNTSUxqWGhReXY2Z0htdkltY0diZEszVEx5a2ZaUVVydy9zOTYtYy9waG90by5qcGciLCJnaXZlbl9uYW1lIjoiTWlrZSIsImZhbWlseV9uYW1lIjoiU2FsbGVzZSIsImxvY2FsZSI6ImVuIn0.MQffEJfbs4nqaugUacv3Bh3SIbu0qC2M00InGxXo6oByOXx02b1OWtM8WjSFnzXuQJEEWtAmpvp5FECreyOdP3aVfbDU-kPg0yIw6IfTTFk8tK3fQlMmM_-HS2Nhw8yT9BdoDTCdX4buRkpYZPcb4BvDXOX7If8J2YbhWZnE51uWuIg_aws9vaWtWeeeisM0-26L6xi45C3HJYPIw1luhoZJ-Ot6yVrbUL7MjFk7O_ZQe_TVO7Vb7kkyLKSQZuBJyspXZW-0cNi_z-hed7aT3tTOzSuY_VqWT3oP2AKQmrPZ7-mnUqT6M6NmAS6k1CWOFvwsEIRMdy82ZjH7vESqIQ");
+            if (UserSession.GetName() == null){
+                setupUserSession(account);
+            }
+            launchCountingActivity();
         }
 
+    }
+
+    @Override
+    public void onClick(View v) {
+        signIn();
+    }
+
+    private void switchAccount() {
+        mGoogleSignInClient.signOut();
+        Intent signInIntent = mGoogleSignInClient.getSignInIntent();
+        startActivityForResult(signInIntent, RC_SIGN_IN);
+    }
+
+    private void launchCountingActivity() {
+        Intent countingIntent = new Intent(this, TabbedActivity.class);
+        this.startActivity(countingIntent);
+        this.finish();
     }
 
     @Override
@@ -132,11 +159,10 @@ public class HomeActivity extends AppCompatActivity {
     private void handleSignInResult(Task<GoogleSignInAccount> completedTask) {
         try {
             GoogleSignInAccount account = completedTask.getResult(ApiException.class);
+            logSensorLevel(account.getId());
             logSensorLevel("successfully signed in: " + account.getEmail());
             logSensorLevel("id token: " + account.getIdToken());
-            logSensorLevel("oldtoken: eyJhbGciOiJSUzI1NiIsImtpZCI6ImUyNzY3MWQ3M2EyNjA1Y2NkNDU0NDEzYzRjOTRlMjViM2Y2NmNkZWEifQ.eyJhenAiOiI1NDc5ODQ2OTE3MTUtYjVpZnYzOWV2OGEyMHQ1OThsNjVlbmV1ZDN0NG83OWMuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1NDc5ODQ2OTE3MTUtcTF0a241Z2Q5aHJuM2lkcTYyOTdqN2dsdGxrajMzNnAuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMTM1OTA2NjY5MzI2NTI5MzUyNTIiLCJlbWFpbCI6Im1zYWxsZXNlMzFAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImV4cCI6MTUxODQwMTU0MywiaXNzIjoiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tIiwiaWF0IjoxNTE4Mzk3OTQzLCJuYW1lIjoiTWlrZSBTYWxsZXNlIiwicGljdHVyZSI6Imh0dHBzOi8vbGg0Lmdvb2dsZXVzZXJjb250ZW50LmNvbS8tU1ptR09mNnNfZncvQUFBQUFBQUFBQUkvQUFBQUFBQUFBQUEvQUNTSUxqWGhReXY2Z0htdkltY0diZEszVEx5a2ZaUVVydy9zOTYtYy9waG90by5qcGciLCJnaXZlbl9uYW1lIjoiTWlrZSIsImZhbWlseV9uYW1lIjoiU2FsbGVzZSIsImxvY2FsZSI6ImVuIn0.MQffEJfbs4nqaugUacv3Bh3SIbu0qC2M00InGxXo6oByOXx02b1OWtM8WjSFnzXuQJEEWtAmpvp5FECreyOdP3aVfbDU-kPg0yIw6IfTTFk8tK3fQlMmM_-HS2Nhw8yT9BdoDTCdX4buRkpYZPcb4BvDXOX7If8J2YbhWZnE51uWuIg_aws9vaWtWeeeisM0-26L6xi45C3HJYPIw1luhoZJ-Ot6yVrbUL7MjFk7O_ZQe_TVO7Vb7kkyLKSQZuBJyspXZW-0cNi_z-hed7aT3tTOzSuY_VqWT3oP2AKQmrPZ7-mnUqT6M6NmAS6k1CWOFvwsEIRMdy82ZjH7vESqIQ");
-            UserSession.SetIdToken(account.getIdToken());
-            UserSession.SetEmail(account.getEmail());
+            setupUserSession(account);
             signIntoBackend();
             // Signed in successfully, show authenticated UI.
             updateUI();
@@ -145,8 +171,15 @@ public class HomeActivity extends AppCompatActivity {
             // Please refer to the GoogleSignInStatusCodes class reference for more information.
             logSensorLevel("signInResult:failed code=" + e.getStatusCode());
             logSensorLevel(e.toString());
-            updateUI();
+            // TODO: 3/10/18 Display sign in failure to user
         }
+    }
+
+    private void setupUserSession(GoogleSignInAccount account){
+        UserSession.SetIdToken(account.getIdToken());
+        UserSession.SetEmail(account.getEmail());
+        UserSession.SetName(account.getDisplayName());
+        logSensorLevel("Successfully setup user session");
     }
 
     private void signIntoBackend() {
@@ -158,8 +191,6 @@ public class HomeActivity extends AppCompatActivity {
     @Override
     protected void onPause() {
         super.onPause();
-        signOut();
-        mGoogleSignInClient.signOut();
     }
 
     private void updateUI() {
@@ -176,7 +207,13 @@ public class HomeActivity extends AppCompatActivity {
                 });
     }
 
-        private class PostRequest extends AsyncTask<Void, Void, String> {
+    @Override
+    protected void onDestroy() {
+        signOut();
+        super.onDestroy();
+    }
+
+    private class PostRequest extends AsyncTask<Void, Void, String> {
 
         private Exception exception;
 
@@ -190,6 +227,7 @@ public class HomeActivity extends AppCompatActivity {
             try {
                 JSONObject signIntoBackendJson = new JSONObject();
                 signIntoBackendJson.put("idToken", UserSession.GetIdToken());
+                signIntoBackendJson.put("name", UserSession.GetName());
                 signIntoBackendJson.put("email", UserSession.GetEmail());
                 logSensorLevel("signIntoBackendJson: " + signIntoBackendJson);
                 CloseableHttpClient httpClient = HttpClientBuilder.create().build();
@@ -199,13 +237,17 @@ public class HomeActivity extends AppCompatActivity {
                 request.setEntity(params);
                 HttpResponse response = httpClient.execute(request);
                 logSensorLevel(response.toString());
-//                ResponseHandler<String> handler = new BasicResponseHandler();
-//                String body = handler.handleResponse(response).getBytes().toString();
                 logSensorLevel(response.getStatusLine().toString());
-
+                if (response.getStatusLine().getStatusCode() == 200) {
+                    launchCountingActivity();
+                } else {
+                    // TODO: 3/10/18 Display failure to user, try again?
+                    logSensorLevel("Non-200 response when signing into backend");
+                }
             } catch (Exception e) {
                 this.exception = e;
                 logSensorLevel("exception in postrequest: " + e);
+                // TODO: 3/10/18 Display failure to user
                 return null;
             }
             return null;

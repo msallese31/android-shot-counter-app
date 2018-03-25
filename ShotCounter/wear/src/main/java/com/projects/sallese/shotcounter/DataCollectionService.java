@@ -84,7 +84,7 @@ public class DataCollectionService extends Service implements SensorEventListene
         y = accData[1] - gravity[1];
         z = accData[2] - gravity[2];
 
-        logSensorLevel("X: " + x + "\nY: " + y + "\nZ:" + z + "\n");
+//        logSensorLevel("X: " + x + "\nY: " + y + "\nZ:" + z + "\n");
         XAcc.add(x);
         YAcc.add(y);
         ZAcc.add(z);

@@ -40,8 +40,9 @@ public class ListenerService extends WearableListenerService implements MessageA
     public static final String LISTENER_SERVICE_BROADCAST = ListenerService.class.getName() + "LocationBroadcast",
                 INCREMENT_SHOTS = "update_count";
     JSONArray sessionList = new JSONArray();
-    String url ="http://192.168.0.179:8080/count";
-    String idToken = UserSession.GetIdToken();
+    // TODO: 3/10/18 Put this in a global config
+    String url ="http://35.227.124.115:8080/count";
+    String email = UserSession.GetEmail();
 
 
     @Override
@@ -51,7 +52,7 @@ public class ListenerService extends WearableListenerService implements MessageA
         if (messageEvent.getPath().equals(DATA_INTERVAL_PATH)) {
                 try {
                     JSONObject incomingJson = new JSONObject(new String(messageEvent.getData()));
-                    incomingJson.put("idToken", idToken);
+                    incomingJson = incomingJson.put("email", email);
                     logSensorLevel("incoming json: " + incomingJson);
                     CloseableHttpClient httpClient = HttpClientBuilder.create().build();
                     HttpPost request = new HttpPost(url);
@@ -61,17 +62,22 @@ public class ListenerService extends WearableListenerService implements MessageA
                     HttpResponse response = httpClient.execute(request);
                     ResponseHandler<String> handler = new BasicResponseHandler();
                     String body = handler.handleResponse(response);
-//                    incrementCount(body);
+
+                    JSONObject jsonResponse = new JSONObject(body);
+
                     logSensorLevel(body);
+                    Integer shotsCounted = Integer.valueOf(jsonResponse.get("shots_counted").toString());
+                    logSensorLevel(shotsCounted.toString());
+                    incrementCount(shotsCounted);
+
                 }catch (Exception e){
                     logSensorLevel("Exception: " + e);
                 }
         }
     }
 
-    private void incrementCount(String count){
-        Integer shots = Integer.valueOf(count);
-        sendBroadcastMessage(shots);
+    private void incrementCount(Integer count){
+        sendBroadcastMessage(count);
     }
 
     private void sendBroadcastMessage(Integer count) {

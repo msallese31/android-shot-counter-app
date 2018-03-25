@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">Shot Counter</string>
+    <string name="title_activity_tabbed">TabbedActivity</string>
+    <string name="title_counting">Counting</string>
+    <string name="title_history">History</string>
+    <string name="value_history">Coming Soon!</string>
+    <string name="title_notifications">Notifications</string>
 </resources>
