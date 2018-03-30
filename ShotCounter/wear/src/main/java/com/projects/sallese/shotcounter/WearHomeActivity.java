@@ -6,10 +6,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.wearable.activity.WearableActivity;
+import android.support.wearable.view.BoxInsetLayout;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -30,26 +34,34 @@ import com.google.android.gms.wearable.Node;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import static com.projects.sallese.shotcounter.LogHelper.logSensorLevel;
 
 public class WearHomeActivity extends WearableActivity {
 
-    private TextView mTextView;
+    private TextView mTextViewCount;
     private Button startServiceButton;
     String url ="http://192.168.0.179:12345/health";
     private GoogleApiClient googleApiClient;
     private String nodeId;
+    private Handler timerHandler;
+    private int intervalTime = 10000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_wear_home);
         logSensorLevel("Hello from Wear Home activity");
-        mTextView = (TextView) findViewById(R.id.text);
+        mTextViewCount = (TextView) findViewById(R.id.textViewCount);
         startServiceButton = (Button) findViewById(R.id.startService);
 
         LocalBroadcastManager.getInstance(this).registerReceiver(serviceDataReceiver,
@@ -57,16 +69,75 @@ public class WearHomeActivity extends WearableActivity {
 
         initGoogleApiClient();
 
+        LocalBroadcastManager.getInstance(this).registerReceiver(
+                new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context context, Intent intent) {
+                        logSensorLevel("Received message");
+                        Integer shot_count = intent.getIntExtra(ListenerService.INCREMENT_SHOTS, 0);
+                        mTextViewCount.setText(shot_count.toString());
+                    }
+                }, new IntentFilter(ListenerService.LISTENER_SERVICE_BROADCAST)
+        );
+
 
         // Enables Always-on
         setAmbientEnabled();
-        try {
-            logSensorLevel("about to make request");
-//            new PostRequest().execute();
-// handle response here...
-        } catch (Exception ex) {
-            // handle exception here
-            logSensorLevel("Exception!!! " + ex);
+
+//        new Timer().scheduleAtFixedRate(new TimerTask() {
+//            @Override
+//            public void run() {
+//                timerAction();
+//            }
+//        }, 0, 10000);//put here time 1000 milliseconds=1 second
+        timerHandler = new Handler();
+        timerHandler.postDelayed(runnable, intervalTime);
+
+    }
+
+    private Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+      /* do what you need to do */
+            timerAction();
+      /* and here comes the "trick" */
+            timerHandler.postDelayed(this, intervalTime);
+        }
+    };
+
+    @Override
+    public void onEnterAmbient(Bundle ambientDetails) {
+        timerHandler.removeCallbacks(runnable);
+        super.onEnterAmbient(ambientDetails);
+        // Handle entering ambient mode
+    }
+
+    @Override
+    public void onExitAmbient() {
+        timerHandler = new Handler();
+        timerHandler.postDelayed(runnable, intervalTime);
+        super.onExitAmbient();
+        // Handle entering ambient mode
+    }
+
+    @Override
+    public void onUpdateAmbient() {
+        // TODO: 3/24/18 Right now, onUpdateAmbient is called when the time changes (lol so every minute).  This works, but could we just have our
+        // timer call this method instead?
+        timerAction();
+        super.onUpdateAmbient();
+        // Handle entering ambient mode
+    }
+
+    public void timerAction() {
+        // Question: How much data do we lose in the stop service/start service cycle
+        // Seems like there's room for improvement there
+        // TODO: 3/24/18 Evaluate that loss ^^^
+        Date currentTime = Calendar.getInstance().getTime();
+        logSensorLevel("timerAction() called at " + currentTime);
+        if (startServiceButton.getText().equals("Stop")){
+            stopService(new Intent(this, DataCollectionService.class));
+            startService(new Intent(this, DataCollectionService.class));
         }
     }
 
@@ -75,6 +146,12 @@ public class WearHomeActivity extends WearableActivity {
         if (startServiceButton.getText().equals("Start Service")){
             logSensorLevel("Text matched");
             startServiceButton.setText("Stop");
+            if(mTextViewCount.getText().toString() == "TextView"){
+                // TODO: 3/24/18 This should be set from the DB... not 0 
+                mTextViewCount.setText("0");
+            }
+            mTextViewCount.setVisibility(View.VISIBLE);
+
             startService(new Intent(this, DataCollectionService.class));
             return;
         }
@@ -134,6 +211,12 @@ public class WearHomeActivity extends WearableActivity {
                 }
             }).start();
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        timerHandler.removeCallbacks(runnable);
+        super.onDestroy();
     }
 
     private class PostRequest extends AsyncTask<Void, Void, String> {

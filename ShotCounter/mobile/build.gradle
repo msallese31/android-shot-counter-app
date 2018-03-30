@@ -15,6 +15,7 @@ android {
             checkReleaseBuilds false
 
         }
+        vectorDrawables.useSupportLibrary = true
     }
 //    signingConfigs {
 //
@@ -46,7 +47,9 @@ android {
 }
 
 dependencies {
-    compile 'com.google.android.gms:play-services-auth:11.8.0'
+    implementation 'com.android.support:design:26.1.0'
+    implementation 'com.android.support:support-vector-drawable:26.1.0'
+    compile 'com.google.android.gms:play-services-auth:12.0.0'
     compile 'org.apache.httpcomponents:httpclient-android:4.3.5.1'
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation 'com.android.support:appcompat-v7:26.1.0'
@@ -56,4 +59,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
     wearApp project(':wear')
     implementation 'com.google.android.gms:play-services-wearable:+'
+    compile 'com.mcxiaoke.volley:library:1.0.19'
 }
