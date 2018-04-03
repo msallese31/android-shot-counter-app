@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -51,6 +52,7 @@ public class ListenerService extends WearableListenerService implements MessageA
     @Override
     public void onMessageReceived(MessageEvent messageEvent) {
 //        logSensorLevel(idToken);
+        Log.d("doubleDebug", "G");
         logSensorLevel("Message received in wearable listener service!!");
         logSensorLevel(messageEvent.getPath());
         if (messageEvent.getPath().equals(UPDATE_COUNT_PATH)) {
@@ -70,6 +72,8 @@ public class ListenerService extends WearableListenerService implements MessageA
     }
 
     private void sendBroadcastMessage(Integer count) {
+        Log.d("doubleDebug", "Broadcast 2");
+        Log.d("doubleDebug", "H");
         Intent intent = new Intent(LISTENER_SERVICE_BROADCAST);
         intent.putExtra(INCREMENT_SHOTS, count);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
