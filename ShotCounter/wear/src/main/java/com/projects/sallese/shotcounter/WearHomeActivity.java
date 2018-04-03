@@ -7,11 +7,14 @@ import android.content.IntentFilter;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.wearable.activity.WearableActivity;
 import android.support.wearable.view.BoxInsetLayout;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -54,7 +57,7 @@ public class WearHomeActivity extends WearableActivity {
     private GoogleApiClient googleApiClient;
     private String nodeId;
     private Handler timerHandler;
-    private int intervalTime = 10000;
+    private int intervalTime = 5000;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,17 +65,22 @@ public class WearHomeActivity extends WearableActivity {
         setContentView(R.layout.activity_wear_home);
         logSensorLevel("Hello from Wear Home activity");
         mTextViewCount = (TextView) findViewById(R.id.textViewCount);
+        // WHY did this disappear??
         startServiceButton = (Button) findViewById(R.id.startService);
 
-        LocalBroadcastManager.getInstance(this).registerReceiver(serviceDataReceiver,
-                new IntentFilter("send-service-data"));
+//        Log.d("doubleDebug", "Register");
+//        LocalBroadcastManager.getInstance(this).registerReceiver(serviceDataReceiver,
+//                new IntentFilter("send-service-data"));
 
         initGoogleApiClient();
+
+        Log.d("doubleDebug", "A");
 
         LocalBroadcastManager.getInstance(this).registerReceiver(
                 new BroadcastReceiver() {
                     @Override
                     public void onReceive(Context context, Intent intent) {
+                        Log.d("doubleDebug", "B");
                         logSensorLevel("Received message");
                         Integer shot_count = intent.getIntExtra(ListenerService.INCREMENT_SHOTS, 0);
                         mTextViewCount.setText(shot_count.toString());
@@ -80,9 +88,12 @@ public class WearHomeActivity extends WearableActivity {
                 }, new IntentFilter(ListenerService.LISTENER_SERVICE_BROADCAST)
         );
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
+
 
         // Enables Always-on
-        setAmbientEnabled();
+//        setAmbientEnabled();
 
 //        new Timer().scheduleAtFixedRate(new TimerTask() {
 //            @Override
@@ -91,53 +102,65 @@ public class WearHomeActivity extends WearableActivity {
 //            }
 //        }, 0, 10000);//put here time 1000 milliseconds=1 second
         timerHandler = new Handler();
-        timerHandler.postDelayed(runnable, intervalTime);
+//        timerHandler.postDelayed(runnable, intervalTime);
 
     }
+
+
 
     private Runnable runnable = new Runnable() {
         @Override
         public void run() {
       /* do what you need to do */
+            Log.d("doubleDebug", "C");
             timerAction();
       /* and here comes the "trick" */
             timerHandler.postDelayed(this, intervalTime);
         }
     };
 
-    @Override
-    public void onEnterAmbient(Bundle ambientDetails) {
-        timerHandler.removeCallbacks(runnable);
-        super.onEnterAmbient(ambientDetails);
-        // Handle entering ambient mode
-    }
 
-    @Override
-    public void onExitAmbient() {
-        timerHandler = new Handler();
-        timerHandler.postDelayed(runnable, intervalTime);
-        super.onExitAmbient();
-        // Handle entering ambient mode
-    }
+    //    @Override
+//    public void onEnterAmbient(Bundle ambientDetails) {
+////        timerHandler.removeCallbacks(runnable);
+//        super.onEnterAmbient(ambientDetails);
+//        // Handle entering ambient mode
+//    }
 
-    @Override
-    public void onUpdateAmbient() {
-        // TODO: 3/24/18 Right now, onUpdateAmbient is called when the time changes (lol so every minute).  This works, but could we just have our
-        // timer call this method instead?
-        timerAction();
-        super.onUpdateAmbient();
-        // Handle entering ambient mode
-    }
+//    @Override
+//    public void onExitAmbient() {
+////        timerHandler = new Handler();
+////        timerHandler.postDelayed(runnable, intervalTime);
+//        super.onExitAmbient();
+//        // Handle entering ambient mode
+//    }
+
+//    @Override
+//    public void onUpdateAmbient() {
+//        // TODO: 3/24/18 Right now, onUpdateAmbient is called when the time changes (lol so every minute).  This works, but could we just have our
+//        // timer call this method instead?
+////        timerAction();
+//        super.onUpdateAmbient();
+//        // Handle entering ambient mode
+//    }
 
     public void timerAction() {
+        Log.d("doubleDebug", "D");
         // Question: How much data do we lose in the stop service/start service cycle
         // Seems like there's room for improvement there
         // TODO: 3/24/18 Evaluate that loss ^^^
         Date currentTime = Calendar.getInstance().getTime();
+        Log.d("doubleDebug", "timer action called at " + currentTime);
         logSensorLevel("timerAction() called at " + currentTime);
         if (startServiceButton.getText().equals("Stop")){
+
+            Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+            v.vibrate(300);
+
             stopService(new Intent(this, DataCollectionService.class));
             startService(new Intent(this, DataCollectionService.class));
+        } else if (startServiceButton.getText().equals("Start Service")){
+            stopService(new Intent(this, DataCollectionService.class));
         }
     }
 
@@ -152,15 +175,17 @@ public class WearHomeActivity extends WearableActivity {
             }
             mTextViewCount.setVisibility(View.VISIBLE);
 
-            startService(new Intent(this, DataCollectionService.class));
+//            startService(new Intent(this, DataCollectionService.class));
             return;
         }
-        stopService(new Intent(this, DataCollectionService.class));
+//        stopService(new Intent(this, DataCollectionService.class));
         startServiceButton.setText("Start Service");
     }
+
     private BroadcastReceiver serviceDataReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            Log.d("doubleDebug", "E");
             // Get extra data included in the Intent
             String message = intent.getStringExtra("message");
             logSensorLevel("Got message: " + message);
@@ -191,6 +216,8 @@ public class WearHomeActivity extends WearableActivity {
     };
 
     private void sendMessage(final JSONObject setJson) {
+        Log.d("doubleDebug", "F");
+        Log.d("doubleDebug", "Sending message");
         logSensorLevel("In sendMessage");
         logSensorLevel("NodeId: " + nodeId);
         if (nodeId != null) {
@@ -215,50 +242,45 @@ public class WearHomeActivity extends WearableActivity {
 
     @Override
     protected void onDestroy() {
+        Log.d("doubleDebug", "Unregister");
+        unregisterReceiver(serviceDataReceiver);
         timerHandler.removeCallbacks(runnable);
         super.onDestroy();
     }
 
-    private class PostRequest extends AsyncTask<Void, Void, String> {
+    @Override
+    protected void onPause() {
+        Log.d("doubleDebug", "Unregister");
+        unregisterReceiver(serviceDataReceiver);
+        timerHandler.removeCallbacks(runnable);
+        super.onPause();
+    }
 
-        private Exception exception;
+    @Override
+    protected void onStop() {
+        Log.d("doubleDebug", "Unregister");
+        unregisterReceiver(serviceDataReceiver);
+        timerHandler.removeCallbacks(runnable);
+        super.onStop();
+    }
 
-        protected void onPostExecute() {
-            // TODO: check this.exception
-            // TODO: do something with the feed
-        }
+    @Override
+    protected void onResume() {
+        Log.d("doubleDebug", "Register");
+        LocalBroadcastManager.getInstance(this).registerReceiver(serviceDataReceiver,
+                new IntentFilter("send-service-data"));
+        timerHandler.postDelayed(runnable, intervalTime);
+        super.onResume();
+    }
 
-        @Override
-        protected String doInBackground(Void... voids) {
-            try {
-                logSensorLevel("1");
-                CloseableHttpClient httpClient = HttpClientBuilder.create().build();
-                HttpGet request = new HttpGet(url);
-                CloseableHttpResponse resp = httpClient.execute(request);
-                HttpEntity entity = resp.getEntity();
-                StringBuilder sb = new StringBuilder();
-                try {
-                    BufferedReader reader =
-                            new BufferedReader(new InputStreamReader(entity.getContent()), 65728);
-                    String line = null;
-
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line);
-                    }
-                    logSensorLevel(sb.toString());
-                }
-                catch (IOException e) { logSensorLevel(e.toString()); }
-                catch (Exception e) { logSensorLevel(e.toString()); }
-
-
-                System.out.println("finalResult " + sb.toString());
-            } catch (Exception e) {
-                this.exception = e;
-                logSensorLevel("exception in postrequest: " + e);
-                return null;
-            }
-            return null;
-        }
+    @Override
+    protected void onRestart() {
+        // not sure if this is right
+        Log.d("doubleDebug", "Register");
+        LocalBroadcastManager.getInstance(this).registerReceiver(serviceDataReceiver,
+                new IntentFilter("send-service-data"));
+        timerHandler.postDelayed(runnable, intervalTime);
+        super.onRestart();
     }
 
     private void initGoogleApiClient() {

@@ -15,6 +15,7 @@ import android.widget.TextView;
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
+import com.android.volley.RetryPolicy;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -119,6 +120,7 @@ public class TabbedActivity extends AppCompatActivity {
         // Request a string response from the provided URL.
         String countURL = url + "?email=" + UserSession.GetEmail();
         logSensorLevel("URL: " + countURL);
+
         StringRequest stringRequest = new StringRequest(Request.Method.GET, countURL,
                 new Response.Listener<String>() {
                     @Override

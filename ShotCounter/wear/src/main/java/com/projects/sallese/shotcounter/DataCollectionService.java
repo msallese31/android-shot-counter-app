@@ -10,6 +10,7 @@ import android.hardware.SensorManager;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 
 import java.util.ArrayList;
 
@@ -93,6 +94,7 @@ public class DataCollectionService extends Service implements SensorEventListene
 
     @Override
     public void onDestroy() {
+        Log.d("doubleDebug", "on destroy called");
         // TODO: 8/5/17 Clean up after sensors (turn off, save data, etc)
         logSensorLevel("Stop service called on destroy method");
         this.mSensorManager.unregisterListener(this);
@@ -110,5 +112,6 @@ public class DataCollectionService extends Service implements SensorEventListene
         // TODO: 8/19/17 GYRO!!!
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
         logSensorLevel("Sent broadcast!");
+        Log.d("doubleDebug", "Broadcast 1");
     }
 }

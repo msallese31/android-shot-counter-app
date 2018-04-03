@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
 import android.widget.EditText;
 
 import com.google.android.gms.wearable.MessageApi;
@@ -28,6 +29,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import static android.content.ContentValues.TAG;
 import static com.projects.sallese.shotcounter.LogHelper.logSensorLevel;
 
 /**
@@ -59,6 +61,7 @@ public class ListenerService extends WearableListenerService implements MessageA
                     StringEntity params = new StringEntity(incomingJson.toString());
                     request.addHeader("content-type", "application/json");
                     request.setEntity(params);
+                    Log.d("doubleDebug", "EXECUTE POST!");
                     HttpResponse response = httpClient.execute(request);
                     ResponseHandler<String> handler = new BasicResponseHandler();
                     String body = handler.handleResponse(response);
