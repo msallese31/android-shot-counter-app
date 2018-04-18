@@ -9,6 +9,7 @@ import android.location.Location;
 import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
@@ -44,6 +45,7 @@ import static com.projects.sallese.shotcounter.LogHelper.logSensorLevel;
 public class ListenerService extends WearableListenerService implements MessageApi.MessageListener {
 
     private static final String UPDATE_COUNT_PATH = "/update-count";
+    private static final String AUTHENTICATED_PATH = "/authenticated";
     public static final String LISTENER_SERVICE_BROADCAST = ListenerService.class.getName() + "LocationBroadcast",
             INCREMENT_SHOTS = "update_count";
     Integer count;
@@ -64,6 +66,14 @@ public class ListenerService extends WearableListenerService implements MessageA
             }catch (Exception e){
                 logSensorLevel("Exception: " + e);
             }
+        } else if(messageEvent.getPath().equals(AUTHENTICATED_PATH)){
+            try {
+                final Boolean authenticated = Boolean.valueOf(new String(messageEvent.getData(), Charset.forName("UTF-8")));
+                UserSession.SetAuthenticated(authenticated);
+
+            }catch (Exception e){
+                logSensorLevel("Exception: " + e);
+            }
         }
     }
 
@@ -78,6 +88,7 @@ public class ListenerService extends WearableListenerService implements MessageA
         intent.putExtra(INCREMENT_SHOTS, count);
         LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
     }
+
 
 }
 

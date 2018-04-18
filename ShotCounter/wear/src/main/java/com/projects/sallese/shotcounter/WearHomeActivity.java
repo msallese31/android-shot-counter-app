@@ -58,6 +58,8 @@ public class WearHomeActivity extends WearableActivity {
     private String nodeId;
     private Handler timerHandler;
     private int intervalTime = 5000;
+    Boolean authenticated;
+    Vibrator v;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,6 +69,7 @@ public class WearHomeActivity extends WearableActivity {
         mTextViewCount = (TextView) findViewById(R.id.textViewCount);
         // WHY did this disappear??
         startServiceButton = (Button) findViewById(R.id.startService);
+        v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
 
 //        Log.d("doubleDebug", "Register");
 //        LocalBroadcastManager.getInstance(this).registerReceiver(serviceDataReceiver,
@@ -153,20 +156,17 @@ public class WearHomeActivity extends WearableActivity {
         Log.d("doubleDebug", "timer action called at " + currentTime);
         logSensorLevel("timerAction() called at " + currentTime);
         if (startServiceButton.getText().equals("Stop")){
-
-            Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
-            v.vibrate(300);
-
+            v.vibrate(1000);
             stopService(new Intent(this, DataCollectionService.class));
             startService(new Intent(this, DataCollectionService.class));
-        } else if (startServiceButton.getText().equals("Start Service")){
-            stopService(new Intent(this, DataCollectionService.class));
+        } else if (startServiceButton.getText().equals("Start Shooting")){
+
         }
     }
 
-    public void recordData (View v){
+    public void recordData (View view){
         logSensorLevel("Button Push!");
-        if (startServiceButton.getText().equals("Start Service")){
+        if (startServiceButton.getText().equals("Start Shooting")){
             logSensorLevel("Text matched");
             startServiceButton.setText("Stop");
             if(mTextViewCount.getText().toString() == "TextView"){
@@ -175,11 +175,16 @@ public class WearHomeActivity extends WearableActivity {
             }
             mTextViewCount.setVisibility(View.VISIBLE);
 
-//            startService(new Intent(this, DataCollectionService.class));
+            startService(new Intent(this, DataCollectionService.class));
+            timerHandler.postDelayed(runnable, intervalTime);
             return;
+        } else {
+            v.vibrate(1000);
+            timerHandler.removeCallbacks(runnable);
+            stopService(new Intent(this, DataCollectionService.class));
         }
 //        stopService(new Intent(this, DataCollectionService.class));
-        startServiceButton.setText("Start Service");
+        startServiceButton.setText("Start Shooting");
     }
 
     private BroadcastReceiver serviceDataReceiver = new BroadcastReceiver() {
@@ -242,6 +247,7 @@ public class WearHomeActivity extends WearableActivity {
 
     @Override
     protected void onDestroy() {
+        v.cancel();
         Log.d("doubleDebug", "Unregister");
         unregisterReceiver(serviceDataReceiver);
         timerHandler.removeCallbacks(runnable);
@@ -250,6 +256,7 @@ public class WearHomeActivity extends WearableActivity {
 
     @Override
     protected void onPause() {
+        v.cancel();
         Log.d("doubleDebug", "Unregister");
         unregisterReceiver(serviceDataReceiver);
         timerHandler.removeCallbacks(runnable);
@@ -258,28 +265,31 @@ public class WearHomeActivity extends WearableActivity {
 
     @Override
     protected void onStop() {
+        v.cancel();
         Log.d("doubleDebug", "Unregister");
         unregisterReceiver(serviceDataReceiver);
-        timerHandler.removeCallbacks(runnable);
+//        timerHandler.removeCallbacks(runnable);
         super.onStop();
     }
 
     @Override
     protected void onResume() {
+        v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         Log.d("doubleDebug", "Register");
         LocalBroadcastManager.getInstance(this).registerReceiver(serviceDataReceiver,
                 new IntentFilter("send-service-data"));
-        timerHandler.postDelayed(runnable, intervalTime);
+//        timerHandler.postDelayed(runnable, intervalTime);
         super.onResume();
     }
 
     @Override
     protected void onRestart() {
+        v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
         // not sure if this is right
         Log.d("doubleDebug", "Register");
         LocalBroadcastManager.getInstance(this).registerReceiver(serviceDataReceiver,
                 new IntentFilter("send-service-data"));
-        timerHandler.postDelayed(runnable, intervalTime);
+//        timerHandler.postDelayed(runnable, intervalTime);
         super.onRestart();
     }
 
