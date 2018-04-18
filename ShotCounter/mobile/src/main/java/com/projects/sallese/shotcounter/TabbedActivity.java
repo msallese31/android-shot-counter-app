@@ -6,16 +6,19 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.BottomNavigationView;
+import android.support.design.widget.TabLayout;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
-import com.android.volley.RetryPolicy;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
@@ -34,12 +37,16 @@ import java.util.concurrent.TimeUnit;
 
 import static com.projects.sallese.shotcounter.LogHelper.logSensorLevel;
 
+
 public class TabbedActivity extends AppCompatActivity {
 
-    private TextView mTextMessage;
+    private TextView mTextCount;
+    private TextView mTextHistory;
+//    private TextView tvDeviceNotConnected;
     private GoogleApiClient googleApiClient;
     private String nodeId;
     final String url ="http://35.227.124.115:8080/count";
+    TabLayout tl;
 
 
     private BottomNavigationView.OnNavigationItemSelectedListener mOnNavigationItemSelectedListener
@@ -52,11 +59,11 @@ public class TabbedActivity extends AppCompatActivity {
                     if (UserSession.GetCount() == null){
                         setUserSessionCount();
                     }
-                    mTextMessage.setText(UserSession.GetCount().toString());
+                    mTextCount.setText(UserSession.GetCount().toString());
                     updateWatchCount();
                     return true;
                 case R.id.navigation_dashboard:
-                    mTextMessage.setText(R.string.value_history);
+                    mTextCount.setText(R.string.value_history);
                     return true;
             }
             return false;
@@ -67,11 +74,53 @@ public class TabbedActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_tabbed);
-
         this.setTitle("Shot Counter");
+
+        mTextCount = (TextView) findViewById(R.id.count);
+        mTextHistory = (TextView) findViewById(R.id.ComingSoon);
+
         initGoogleApiClient();
 
-        mTextMessage = (TextView) findViewById(R.id.message);
+        tl = (TabLayout) findViewById(R.id.tab_layout);
+        tl.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
+            @Override
+            public void onTabSelected(TabLayout.Tab tab) {
+                switch (tab.getPosition()) {
+                    case 0:
+                        logSensorLevel("selected tab 0");
+                        mTextCount.setVisibility(View.VISIBLE);
+                        mTextHistory.setVisibility(View.INVISIBLE);
+                        break;
+
+                    case 1:
+                        logSensorLevel("selected tab 1");
+                        mTextCount.setVisibility(View.INVISIBLE);
+                        mTextHistory.setVisibility(View.VISIBLE);
+                        break;
+                }
+            }
+
+            @Override
+            public void onTabReselected(TabLayout.Tab tab) {
+                switch (tab.getPosition()) {
+                    case 0:
+                        logSensorLevel("reselected tab 0");
+                        mTextCount.setVisibility(View.VISIBLE);
+                        break;
+
+                    case 1:
+                        logSensorLevel("reselected tab 1");
+                        mTextCount.setVisibility(View.INVISIBLE);
+                        break;
+                }
+            }
+
+            @Override
+            public void onTabUnselected(TabLayout.Tab tab) {
+                logSensorLevel("not doing anything with the tab here yet");
+            }
+        });
+//        tvDeviceNotConnected = (TextView) findViewById(R.id.tvWatchNotConnected);
 
         // TODO: 3/10/18 Get the users daily shot count and populate it with that value instead
         // remove this if check once we do that
@@ -99,8 +148,9 @@ public class TabbedActivity extends AppCompatActivity {
                     public void onReceive(Context context, Intent intent) {
                         logSensorLevel("Received message");
                         int shot_count = intent.getIntExtra(ListenerService.INCREMENT_SHOTS, 0);
-                        UserSession.IncrementCount(shot_count);
-                        mTextMessage.setText(UserSession.GetCount().toString());
+                        Log.d("doubleDebug", "increment called!");
+//                        UserSession.IncrementCount(shot_count);
+                        mTextCount.setText(UserSession.GetCount().toString());
                         updateWatchCount();
                     }
                 }, new IntentFilter(ListenerService.LISTENER_SERVICE_BROADCAST)
@@ -133,7 +183,7 @@ public class TabbedActivity extends AppCompatActivity {
                             Integer shots_counted = new Integer(jsonObj.getInt("shots_counted"));
                             logSensorLevel(shots_counted.toString());
                             UserSession.SetCount(shots_counted);
-                            mTextMessage.setText(UserSession.GetCount().toString());
+                            mTextCount.setText(UserSession.GetCount().toString());
                             updateWatchCount();
                         }
                         catch (JSONException e) {
@@ -156,37 +206,56 @@ public class TabbedActivity extends AppCompatActivity {
     private void updateWatchCount() {
         logSensorLevel("In updateWatchCount");
         logSensorLevel("NodeId: " + nodeId);
+
+//        if (UserSession.GetBluetoothStatus() == false){
+//            BluetoothTurnedOff();
+//        } else {
+//            BluetoothTurnedOn();
+//        }
+
+
         if (nodeId != null) {
+//            UserSession.SetBluetoothStatus(true);
             new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    logSensorLevel("Sending message");
-                    googleApiClient.blockingConnect(10000, TimeUnit.MILLISECONDS);
-//                    JSONObject setJson = new JSONObject();
-//                    try {
-//                        setJson.put("Name", "hello");
-//                    }catch (JSONException je){
-//                        logSensorLevel("json exception: " + je);
-//                    }
-                    logSensorLevel("About to send shot session message!");
-                    Wearable.MessageApi.sendMessage(googleApiClient, nodeId, "/update-count", UserSession.GetCount().toString().getBytes());
-                    logSensorLevel("Should've sent message");
-                    googleApiClient.disconnect();
+                        logSensorLevel("Sending message");
+                        googleApiClient.blockingConnect(10000, TimeUnit.MILLISECONDS);
+                        logSensorLevel("About to send shot session message!");
+                        Wearable.MessageApi.sendMessage(googleApiClient, nodeId, "/update-count", UserSession.GetCount().toString().getBytes());
+                        Wearable.MessageApi.sendMessage(googleApiClient, nodeId, "/authenticated", UserSession.GetAuthenticatedStatus().toString().getBytes());
+                        logSensorLevel("Should've sent message");
+                        // Disabling this because it feels wrong for now
+//                        googleApiClient.disconnect();
                 }
             }).start();
         }
+
     }
+
 
     private void initGoogleApiClient() {
         googleApiClient = getGoogleApiClient(this);
         retrieveDeviceNode();
     }
 
+//    public void BluetoothTurnedOn(){
+//        mTextCount.setVisibility(View.VISIBLE);
+//        tvDeviceNotConnected.setVisibility(View.INVISIBLE);
+//    }
+//
+//    public void BluetoothTurnedOff(){
+//        mTextCount.setVisibility(View.INVISIBLE);
+//        tvDeviceNotConnected.setVisibility(View.VISIBLE);
+//    }
+
     private GoogleApiClient getGoogleApiClient(Context context) {
         return new GoogleApiClient.Builder(context)
                 .addApi(Wearable.API)
                 .build();
     }
+
+
 
     private void retrieveDeviceNode() {
         new Thread(new Runnable() {

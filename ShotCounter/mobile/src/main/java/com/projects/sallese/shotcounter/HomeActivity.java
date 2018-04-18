@@ -10,10 +10,12 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -29,13 +31,18 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.http.message.BasicNameValuePair;
+import org.apache.http.params.BasicHttpParams;
+import org.apache.http.params.HttpConnectionParams;
+import org.apache.http.params.HttpParams;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -70,11 +77,12 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_home);
         // Set the dimensions of the sign-in button.
 
-        SignInButton signInButton = findViewById(R.id.sign_in_button);
-        signInButton.setSize(SignInButton.SIZE_WIDE);
+        Button signInButton = findViewById(R.id.sign_in_button);
+//        signInButton.setSize(SignInButton.SIZE_WIDE);
 
         findViewById(R.id.sign_in_button).setOnClickListener(this);
 
@@ -102,7 +110,7 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        signIn();
+//        signIn();
     }
 
     @Override
@@ -114,6 +122,7 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
     private void signIn(){
         GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
         if (account == null) {
+            UserSession.SetAuthenticated(false);
             Intent signInIntent = mGoogleSignInClient.getSignInIntent();
             startActivityForResult(signInIntent, RC_SIGN_IN);
         } else {
@@ -121,7 +130,7 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
             if (UserSession.GetName() == null){
                 setupUserSession(account);
             }
-            launchCountingActivity();
+            new PostRequest().execute();
         }
 
     }
@@ -225,12 +234,15 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
         @Override
         protected String doInBackground(Void... voids) {
             try {
+
                 JSONObject signIntoBackendJson = new JSONObject();
                 signIntoBackendJson.put("idToken", UserSession.GetIdToken());
                 signIntoBackendJson.put("name", UserSession.GetName());
                 signIntoBackendJson.put("email", UserSession.GetEmail());
                 logSensorLevel("signIntoBackendJson: " + signIntoBackendJson);
-                CloseableHttpClient httpClient = HttpClientBuilder.create().build();
+
+                RequestConfig config = RequestConfig.custom().setConnectTimeout(500).build();
+                CloseableHttpClient httpClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
                 HttpPost request = new HttpPost(url);
                 StringEntity params = new StringEntity(signIntoBackendJson.toString());
                 request.addHeader("content-type", "application/json");
@@ -239,12 +251,24 @@ public class HomeActivity extends AppCompatActivity implements View.OnClickListe
                 logSensorLevel(response.toString());
                 logSensorLevel(response.getStatusLine().toString());
                 if (response.getStatusLine().getStatusCode() == 200) {
+                    UserSession.SetAuthenticated(true);
                     launchCountingActivity();
                 } else {
+                    UserSession.SetAuthenticated(false);
+                    Toast.makeText(HomeActivity.this, "Failed to sign in.  Try again",
+                            Toast.LENGTH_LONG).show();
                     // TODO: 3/10/18 Display failure to user, try again?
                     logSensorLevel("Non-200 response when signing into backend");
                 }
             } catch (Exception e) {
+                UserSession.SetAuthenticated(false);
+                HomeActivity.this.runOnUiThread(new Runnable() {
+                    public void run() {
+                        Toast t = Toast.makeText(HomeActivity.this, "Failed to sign in.  Try again", Toast.LENGTH_SHORT);
+                        t.setGravity(Gravity.CENTER_HORIZONTAL|Gravity.CENTER_VERTICAL, 0, 0);
+                        t.show();
+                    }
+                });
                 this.exception = e;
                 logSensorLevel("exception in postrequest: " + e);
                 // TODO: 3/10/18 Display failure to user

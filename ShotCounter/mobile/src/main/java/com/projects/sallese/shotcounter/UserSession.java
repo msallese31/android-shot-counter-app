@@ -23,4 +23,13 @@ public class UserSession {
         public static void SetCount(Integer count) { UserSession.count = count; }
         public static Integer GetCount() { return UserSession.count; }
         public synchronized static void IncrementCount(Integer count) { UserSession.count = UserSession.count + count; }
+
+        private static Boolean bluetooth = false;
+        public static Boolean GetBluetoothStatus() { return UserSession.bluetooth; }
+        public static void SetBluetoothStatus(Boolean b) { UserSession.bluetooth = b; }
+
+        private static Boolean authenticated = false;
+        public static Boolean GetAuthenticatedStatus() { return UserSession.authenticated; }
+        public static void SetAuthenticated(Boolean a) { UserSession.authenticated = a; }
+
     }

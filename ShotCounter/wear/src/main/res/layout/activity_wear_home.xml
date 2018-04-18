@@ -19,9 +19,9 @@
             android:id="@+id/startService"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Start Service"
+            android:text="Start Shooting"
             android:onClick="recordData"
-            android:layout_gravity="center|center_horizontal"
+            android:layout_gravity="bottom|center_horizontal"
             />
 
         <TextView
@@ -30,7 +30,8 @@
             android:layout_height="wrap_content"
             android:inputType="number"
             android:text="0"
-            android:layout_gravity="bottom|center_horizontal"/>
+            android:textSize="45dp"
+            android:layout_gravity="top|center_horizontal"/>
 
 
     </FrameLayout>
